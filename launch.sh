@@ -10,4 +10,8 @@ qemu-system-x86_64 \
         -audiodev pa,id=audio0 \
 	-serial null \
 	-serial null \
-        -serial tcp:127.0.0.1:7777,server,wait
+        -serial tcp:127.0.0.1:7777,server,wait &
+
+sleep .5
+
+python snail.py

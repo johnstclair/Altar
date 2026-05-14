@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sudo qemu-nbd --disconnect /dev/nbd0
+sudo umount /mnt/tos
