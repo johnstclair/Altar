@@ -6,104 +6,109 @@ Bool normal_mode = TRUE;
 
 public Bool View()
 {//Go live for user interaction until <ESC> or <SHIFT-ESC>.
-  I64 ch, sc, old_col;
+  I64 ch, sc, old_col, operator, i;
+  U8 operator_str[64] = NULL;
+  operator = 1;
   CDoc *doc = DocPut;
   do {
     ch=DocGetKey(&sc,FALSE);
+    
     if (normal_mode) {
     /* ---- movement ---- */
-      switch (ch) {
-        case 0:
-          switch (sc.u8[0]) {
-            case SC_CURSOR_LEFT:
-              if (doc->cur_col > 0)
-                doc->cur_col=doc->cur_col-1;
-              break;
-            case SC_CURSOR_RIGHT:
-              doc->cur_col=doc->cur_col+1;
-              break;
-            case SC_CURSOR_UP:
-              EdLineUp(doc);
-              break;
-            case SC_CURSOR_DOWN:
-              EdLineDown(doc);
-              break;
-            case SC_DELETE:
-              EdCharDel(doc);
-              break;
-          }
+      for (i = 0; i < operator; ++i) {
+        switch (ch) {
+          case 0:
+            switch (sc.u8[0]) {
+              case SC_CURSOR_LEFT:
+                if (doc->cur_col > 0)
+                  doc->cur_col=doc->cur_col-1;
+                break;
+              case SC_CURSOR_RIGHT:
+                doc->cur_col=doc->cur_col+1;
+                break;
+              case SC_CURSOR_UP:
+                EdLineUp(doc);
+                break;
+              case SC_CURSOR_DOWN:
+                EdLineDown(doc);
+                break;
+              case SC_DELETE:
+                EdCharDel(doc);
+                break;
+            }
+            break;
+          case 'j':
+            EdLineDown(doc);
+            break;
+          case 'k':
+            EdLineUp(doc);
+            break;
+          case 'h':
+            if (doc->cur_col > 0)
+              doc->cur_col=doc->cur_col-1;
+            break;
+          case 'l':
+            doc->cur_col=doc->cur_col+1;
+            break;
+          case '0':
+            DocPutKey(doc,0,SC_CURSOR_LEFT | SCF_CTRL);
+            break;
+          case '$$':
+            DocPutKey(doc,0,SC_CURSOR_RIGHT | SCF_CTRL);
+            break;
+          case 'g':
+            DocPutKey(doc,0,SC_CURSOR_UP | SCF_CTRL);
+            break;
+          case 'G':
+            DocPutKey(doc,0,SC_CURSOR_DOWN | SCF_CTRL);
+            break;
+  
+  /* ---- insert ---- */
+          case 'i':
+            normal_mode = FALSE;
+            break;
+          case 'I':
+            normal_mode = FALSE;
+            DocPutKey(doc,0,SC_CURSOR_LEFT | SCF_CTRL);
+            break;
+          case 'a':
+            normal_mode = FALSE;
+            DocPutKey(doc,0,SC_CURSOR_RIGHT);
+            break;
+          case 'A':
+            normal_mode = FALSE;
+            DocPutKey(doc,0,SC_CURSOR_RIGHT | SCF_CTRL);
+            break;
+          case 'o':
+            normal_mode = FALSE;
+            DocPutKey(doc,0,SC_CURSOR_RIGHT | SCF_CTRL);
+            DocPutKey(doc,'\n',0);
+            break;
+  
+  /* ---- edit ---- */
+          case 'd':
+            EdLineDel(doc);
+            break;
+          case 'y':
+            old_col = doc->cur_col;
+            DocPutKey(doc,0,SC_CURSOR_LEFT | SCF_CTRL);
+            DocPutKey(doc,0,SC_CURSOR_RIGHT | SCF_CTRL | SCF_SHIFT);
+            ClipCopy(doc);
+            doc->cur_col = old_col;
+            break;
+          case 'p':
+            ClipPaste(doc);
           break;
-        case 'j':
-          EdLineDown(doc);
-          break;
-        case 'k':
-          EdLineUp(doc);
-          break;
-        case 'h':
-          if (doc->cur_col > 0)
-            doc->cur_col=doc->cur_col-1;
-          break;
-        case 'l':
-          doc->cur_col=doc->cur_col+1;
-          break;
-        case '0':
-          DocPutKey(doc,0,SC_CURSOR_LEFT | SCF_CTRL);
-          break;
-        case '$$':
-          DocPutKey(doc,0,SC_CURSOR_RIGHT | SCF_CTRL);
-          break;
-        case 'g':
-          DocPutKey(doc,0,SC_CURSOR_UP | SCF_CTRL);
-          break;
-        case 'G':
-          DocPutKey(doc,0,SC_CURSOR_DOWN | SCF_CTRL);
-          break;
-
-/* ---- insert ---- */
-        case 'i':
-          normal_mode = FALSE;
-          break;
-        case 'I':
-          normal_mode = FALSE;
-          DocPutKey(doc,0,SC_CURSOR_LEFT | SCF_CTRL);
-          break;
-        case 'a':
-          normal_mode = FALSE;
-          DocPutKey(doc,0,SC_CURSOR_RIGHT);
-          break;
-        case 'A':
-          normal_mode = FALSE;
-          DocPutKey(doc,0,SC_CURSOR_RIGHT | SCF_CTRL);
-          break;
-        case 'o':
-          normal_mode = FALSE;
-          DocPutKey(doc,0,SC_CURSOR_RIGHT | SCF_CTRL);
-          DocPutKey(doc,'\n',0);
-          break;
-
-/* ---- edit ---- */
-        case 'd':
-          EdLineDel(doc);
-          break;
-        case 'y':
-          old_col = doc->cur_col;
-          DocPutKey(doc,0,SC_CURSOR_LEFT | SCF_CTRL);
-          DocPutKey(doc,0,SC_CURSOR_RIGHT | SCF_CTRL | SCF_SHIFT);
-          ClipCopy(doc);
-          doc->cur_col = old_col;
-          break;
-        case 'p':
-          ClipPaste(doc);
-          break;
-        case 'u':
-          DocUndoRestore(doc);
-          break;
-        case 'n':
-          EdFindNext(doc);
-          break;
-        case '/':
-          EdFindReplace(doc);
-          break;
+          case 'u':
+            DocUndoRestore(doc);
+            break;
+          case 'n':
+            EdFindNext(doc);
+            break;
+          case '/':
+            EdFindReplace(doc);
+            break;
+        }
       }
     } else {
       if (ch==CH_ESC) {
@@ -111,6 +116,13 @@ public Bool View()
         normal_mode = TRUE;
       } else
         PutKey(ch,sc);
+    }
+    if (StrOcc("0123456789",ch)) {
+      StrPrint(operator_str, "%s%c", operator_str, ch);
+      operator = Str2I64(operator_str);
+    } else {
+      StrPrint(operator_str, "");
+      operator = 1;
     }
   }
   while (ch!=CH_ESC && ch!=CH_SHIFT_ESC);
@@ -169,11 +181,11 @@ U8 *EdDollarCB(CDoc *,CDocEntry *doc_e,CTask *mem_task)
 
 U8 *EdModeCB(CDoc *,CDocEntry *doc_e,CTask *mem_task)
 {
-  U8 *st=MAlloc(8,mem_task);
+  U8 *st=MAlloc(10,mem_task);
   if (normal_mode)
-    StrCpy(st,"NORMAL");
+    StrCpy(st,"NormalÄ");
   else
-    StrCpy(st,"INSERT");
+    StrCpy(st,"InsertÄ");
   return st;
 }
 
